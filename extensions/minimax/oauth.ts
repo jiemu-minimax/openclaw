@@ -4,19 +4,25 @@ import { ensureGlobalUndiciEnvProxyDispatcher } from "openclaw/plugin-sdk/runtim
 
 export type MiniMaxRegion = "cn" | "global";
 
+// Allow env override for test/pre environments (not shipped to production)
 const MINIMAX_OAUTH_CONFIG = {
   cn: {
-    baseUrl: "https://api.minimaxi.com",
+    baseUrl: process.env.MINIMAX_CN_AUTH_URL ?? "https://api.minimaxi.com",
     clientId: "78257093-7e40-4613-99e0-527b14b39113",
   },
   global: {
-    baseUrl: "https://api.minimax.io",
+    baseUrl: process.env.MINIMAX_AUTH_URL ?? "https://api.minimax.io",
     clientId: "78257093-7e40-4613-99e0-527b14b39113",
   },
-} as const;
+};
 
 const MINIMAX_OAUTH_SCOPE = "group_id profile model.completion";
 const MINIMAX_OAUTH_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:user_code";
+
+function getLaneHeaders(): Record<string, string> {
+  const lane = process.env.BEDROCK_LANE;
+  return lane ? { bedrock_lane: lane } : {};
+}
 
 function getOAuthEndpoints(region: MiniMaxRegion) {
   const config = MINIMAX_OAUTH_CONFIG[region];
@@ -69,6 +75,7 @@ async function requestOAuthCode(params: {
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json",
       "x-request-id": randomUUID(),
+      ...getLaneHeaders(),
     },
     body: toFormUrlEncoded({
       response_type: "code",
@@ -109,6 +116,7 @@ async function pollOAuthToken(params: {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json",
+      ...getLaneHeaders(),
     },
     body: toFormUrlEncoded({
       grant_type: MINIMAX_OAUTH_GRANT_TYPE,
