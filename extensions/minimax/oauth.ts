@@ -20,8 +20,15 @@ const MINIMAX_OAUTH_SCOPE = "group_id profile model.completion";
 const MINIMAX_OAUTH_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:user_code";
 
 function getLaneHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
   const lane = process.env.BEDROCK_LANE;
-  return lane ? { bedrock_lane: lane } : {};
+  if (lane) {
+    headers.bedrock_lane = lane;
+  }
+  if (process.env.X_USER_PRE) {
+    headers["X-User-Pre"] = "true";
+  }
+  return headers;
 }
 
 function getOAuthEndpoints(region: MiniMaxRegion) {
